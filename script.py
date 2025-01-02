@@ -9,10 +9,9 @@ import socket
 
 
 DEVICE_PATH = '/dev/input/event14'
-RETRY_INTERVAL = 3  # Seconds to wait before retrying
+RETRY_INTERVAL = 3
 
-def find_device():
-    """Wait until the input device becomes available."""
+def find_controller_device():
     while True:
         try:
             devices = [InputDevice(path) for path in list_devices()]
@@ -26,13 +25,11 @@ def find_device():
             print(f"Error checking devices: {e}")
             time.sleep(RETRY_INTERVAL)
 
-# Retry until the device is available
-device = find_device()
+device = find_controller_device()
 
-BTN_A = ecodes.BTN_SOUTH  # 'A' Button
-BTN_B = ecodes.BTN_EAST   # 'B' Button
+BTN_A = ecodes.BTN_SOUTH 
+BTN_B = ecodes.BTN_EAST
 
-# State tracking
 pressed_buttons = set()
 combo_pressed_time = None
 COMBO_HOLD_TIME = 3  # Seconds
@@ -76,9 +73,6 @@ def start_steamlink():
 
 def execute_command():
     print("Button combo detected! Running script...")
-
-   
-
     send_wol_packet("d8:80:83:9c:5b:2f")  # Replace with the actual MAC address of DESKTOP-L87EPJN
 
     x, y = random.randint(0, 10), random.randint(0, 10)
@@ -86,10 +80,11 @@ def execute_command():
 
     start_steamlink()
 
-    for i in range(10):
+    for _ in range(10):
         subprocess.run(["/home/sverrejb/.local/bin/alga", "power", "on"])
         time.sleep(0.5)
-    time.sleep(3)
+    
+    time.sleep(5)
     subprocess.run(["/home/sverrejb/.local/bin/alga", "input", "set", "HDMI_2"])
 
 try:
