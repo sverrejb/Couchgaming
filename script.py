@@ -5,6 +5,7 @@ from evdev import InputDevice, ecodes, list_devices
 import time
 import subprocess
 import random
+import socket
 
 
 DEVICE_PATH = '/dev/input/event14'
@@ -35,6 +36,13 @@ BTN_B = ecodes.BTN_EAST   # 'B' Button
 pressed_buttons = set()
 combo_pressed_time = None
 COMBO_HOLD_TIME = 3  # Seconds
+
+def send_wol_packet(mac_address):
+       mac_bytes = bytes.fromhex(mac_address.replace(":", ""))
+       magic_packet = b'\xff' * 6 + mac_bytes * 16
+       with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+           sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+           sock.sendto(magic_packet, ('<broadcast>', 9))
 
 def start_steamlink():
     try:
@@ -68,14 +76,19 @@ def start_steamlink():
 
 def execute_command():
     print("Button combo detected! Running script...")
+
+   
+
+    send_wol_packet("d8:80:83:9c:5b:2f")  # Replace with the actual MAC address of DESKTOP-L87EPJN
+
     x, y = random.randint(0, 10), random.randint(0, 10)
     subprocess.run(["ydotool", "mousemove", str(x), str(y)])
 
     start_steamlink()
 
-    for i in range(5):
+    for i in range(10):
         subprocess.run(["/home/sverrejb/.local/bin/alga", "power", "on"])
-        time.sleep(1)
+        time.sleep(0.5)
     time.sleep(3)
     subprocess.run(["/home/sverrejb/.local/bin/alga", "input", "set", "HDMI_2"])
 
