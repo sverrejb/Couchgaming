@@ -113,7 +113,7 @@ try:
         except OSError as e:
             if e.errno == 19:  # No such device (disconnected)
                 print(f"Device disconnected. Reconnecting...")
-                device = find_device()  # Wait and retry if device disconnects
+                device = find_controller_device()  # Wait and retry if device disconnects
             else:
                 print(f"Unexpected error: {e}")
                 time.sleep(RETRY_INTERVAL)  # Sleep before retrying
