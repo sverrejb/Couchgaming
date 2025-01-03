@@ -80,7 +80,7 @@ def execute_command():
 
     start_steamlink()
 
-    for _ in range(10):
+    for _ in range(3):
         subprocess.run(["/home/sverrejb/.local/bin/alga", "power", "on"])
         time.sleep(0.5)
     

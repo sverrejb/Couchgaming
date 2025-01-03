@@ -1,0 +1,17 @@
+[Unit]
+Description=Game Start Script
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/sverrejb/workspace/gamestart/script.py
+Environment="WAYLAND_DISPLAY=wayland-0"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+Environment="QT_QPA_PLATFORM=wayland"
+User=sverrejb
+Group=sverrejb
+StandardOutput=journal
+StandardError=journal
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
