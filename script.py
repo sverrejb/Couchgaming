@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 
-import evdev
-from evdev import InputDevice, ecodes, list_devices, ff
+from evdev import InputDevice, ecodes, list_devices, ff, categorize
 import time
 import subprocess
 import random
@@ -26,7 +25,7 @@ def main():
             try:
                 for event in device.read_loop():
                     if event.type == ecodes.EV_KEY:
-                        key_event = evdev.categorize(event)
+                        key_event = categorize(event)
                         if key_event.keystate == key_event.key_down:
                             pressed_buttons.add(key_event.scancode)
                             if BTN_A in pressed_buttons and BTN_B in pressed_buttons:
@@ -66,6 +65,38 @@ def find_controller_device():
         except Exception as e:
             print(f'Error checking devices: {e}')
             time.sleep(RETRY_INTERVAL)
+
+def execute_commands(device):
+    print('Button combo detected! Running script...')
+    rumble_controller(device)
+    print('Waking TV....')
+    send_wol_packet(MAC_ADDRESS_TV)
+    print('Waking Desktop....')
+    send_wol_packet(MAC_ADDRESS_DESKTOP) 
+    wake_screen()
+    start_steamlink()
+    print('Setting TV input')
+    set_tv_input()        
+    print('Commands completed.')
+
+def rumble_controller(device):
+    rumble = ff.Rumble(strong_magnitude=0xc000, weak_magnitude=0xc000)
+    duration_ms = 500
+
+    effect = ff.Effect(
+        ecodes.FF_RUMBLE,
+        -1,
+        0,
+        ff.Trigger(0, 0),
+        ff.Replay(duration_ms, 0),
+        ff.EffectType(ff_rumble_effect=rumble)
+    )
+    
+    effect_id = device.upload_effect(effect)
+    repeat_count = 1
+    device.write(ecodes.EV_FF, effect_id, repeat_count)
+    time.sleep(0.5)
+    device.erase_effect(effect_id) 
 
 def send_wol_packet(mac_address):
     mac_bytes = bytes.fromhex(mac_address.replace(':', ''))
@@ -110,35 +141,7 @@ def start_steamlink():
     except Exception as e:
         print(f'Error checking for SteamLink process: {e}')
 
-def rumble_controller(device):
-    rumble = ff.Rumble(strong_magnitude=0xc000, weak_magnitude=0xc000)
-    duration_ms = 500
-
-    effect = ff.Effect(
-        ecodes.FF_RUMBLE,
-        -1,
-        0,
-        ff.Trigger(0, 0),
-        ff.Replay(duration_ms, 0),
-        ff.EffectType(ff_rumble_effect=rumble)
-    )
-    
-    effect_id = device.upload_effect(effect)
-    repeat_count = 1
-    device.write(ecodes.EV_FF, effect_id, repeat_count)
-    time.sleep(0.5)
-    device.erase_effect(effect_id) 
-
-def execute_commands(device):
-    print('Button combo detected! Running script...')
-    rumble_controller(device)
-    print('Waking TV....')
-    send_wol_packet(MAC_ADDRESS_TV)
-    print('Waking Desktop....')
-    send_wol_packet(MAC_ADDRESS_DESKTOP) 
-    wake_screen()
-    start_steamlink()
-    
+def set_tv_input():
     try:
         subprocess.run(['/home/sverrejb/.local/bin/alga', 'input', 'set', HDMI_INPUT], check=True)
     except:
@@ -157,8 +160,6 @@ def execute_commands(device):
             print(f'Setting HDMI-input {i+1}/5')
             subprocess.run(['/home/sverrejb/.local/bin/alga', 'input', 'set', HDMI_INPUT])
             time.sleep(0.2)
-        
-    print('Steps completed.')
 
 if __name__ == '__main__':
     main()
