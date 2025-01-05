@@ -40,7 +40,7 @@ def send_wol_packet(mac_address):
 
 def wake_screen():
     x, y = random.randint(0, 10), random.randint(0, 10)
-    subprocess.run(["ydotool", "mousemove", str(x), str(y)])
+    subprocess.run(["ydotool", "mousemove", str(x), str(y)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def start_steamlink():
@@ -53,8 +53,6 @@ def start_steamlink():
 
         # If pgrep finds an existing process, it returns a non-empty result
         if result.stdout:
-            print("Bringing SteamLink to the foreground...")
-            subprocess.run(["swaymsg", "[app_id=\"com.valvesoftware.SteamLink\"] focus"])
             print("SteamLink is already running, skipping launch.")
         else:
             # If SteamLink is not running, start it
@@ -97,7 +95,9 @@ def rumble_controller(device):
 def execute_command():
     print("Button combo detected! Running script...")
     rumble_controller(device)
+    print('Waking TV....')
     send_wol_packet(MAC_ADDRESS_TV)
+    print('Waking Desktop....')
     send_wol_packet(MAC_ADDRESS_DESKTOP) 
     wake_screen()
     start_steamlink()
@@ -130,7 +130,6 @@ combo_pressed_time = None
 try:
     while True:
         try:
-     # Read input events
             for event in device.read_loop():
                 if event.type == ecodes.EV_KEY:  # Key press/release events
                     key_event = evdev.categorize(event)
@@ -154,10 +153,10 @@ try:
         except OSError as e:
             if e.errno == 19:  # No such device (disconnected)
                 print(f"Device disconnected. Reconnecting...")
-                device = find_controller_device()  # Wait and retry if device disconnects
+                device = find_controller_device()
             else:
                 print(f"Unexpected error: {e}")
-                time.sleep(RETRY_INTERVAL)  # Sleep before retrying
+                time.sleep(RETRY_INTERVAL)
 
 except KeyboardInterrupt:
     print("Exiting...")
