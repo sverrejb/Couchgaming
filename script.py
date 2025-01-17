@@ -9,9 +9,11 @@ import socket
 MAC_ADDRESS_DESKTOP = 'd8:80:83:9c:5b:2f'
 MAC_ADDRESS_TV = '48:8d:36:bc:e8:ec'
 DEVICE_PATH = '/dev/input/event14'
+IP_ADDRESS_TV = '192.168.1.43'
 RETRY_INTERVAL = 3
 BTN_A = ecodes.BTN_SOUTH 
 BTN_B = ecodes.BTN_EAST
+BTN_COMBO = set([BTN_A, BTN_B])
 COMBO_HOLD_TIME = 1.5 # Seconds
 HDMI_INPUT = 'HDMI_2'
 
@@ -20,36 +22,34 @@ def main():
     pressed_buttons = set()
     combo_pressed_time = None
 
-    try:
-        while True:
-            try:
-                for event in device.read_loop():
-                    if event.type == ecodes.EV_KEY:
-                        key_event = categorize(event)
-                        if key_event.keystate == key_event.key_down:
-                            pressed_buttons.add(key_event.scancode)
-                            if BTN_A in pressed_buttons and BTN_B in pressed_buttons:
-                                if combo_pressed_time is None:
-                                    combo_pressed_time = time.time()
-                        elif key_event.keystate == key_event.key_up:
-                            pressed_buttons.discard(key_event.scancode)
-                            combo_pressed_time = None
-
+    
+    while True:
+        try:
+            for event in device.read_loop():
+                if event.type != ecodes.EV_KEY:
+                    continue
+                key_event = categorize(event)
+                if key_event.keystate == key_event.key_down:
+                    pressed_buttons.add(key_event.scancode)
+                    if pressed_buttons == BTN_COMBO:
+                        combo_pressed_time = time.time()
+                    else:
+                        combo_pressed_time = None
+                elif key_event.keystate == key_event.key_up:
                     if combo_pressed_time and (time.time() - combo_pressed_time >= COMBO_HOLD_TIME):
-                        
                         execute_commands(device)
                         combo_pressed_time = None
+                    pressed_buttons.discard(key_event.scancode)
+                    combo_pressed_time = None
 
-            except OSError as e:
-                if e.errno == 19:  # 19 = No such device (disconnected)
-                    print(f'Device disconnected. Reconnecting...')
-                    device = find_controller_device()
-                else:
-                    print(f'Unexpected error: {e}')
-                    time.sleep(RETRY_INTERVAL)
 
-    except KeyboardInterrupt:
-        print('Exiting...')
+        except OSError as e:
+            if e.errno == 19:  # 19 = No such device (disconnected)
+                print(f'Device disconnected. Reconnecting...')
+                device = find_controller_device()
+            else:
+                print(f'Unexpected error: {e}')
+                time.sleep(RETRY_INTERVAL)
 
 
 def find_controller_device():
@@ -147,7 +147,7 @@ def set_tv_input():
     except:
         print('Initial HDMI-switch failed. Trying harder.')
         while True:
-            response = subprocess.run(['ping', '-c', '1', '-W', '1', '192.168.1.43'], stdout=subprocess.PIPE)
+            response = subprocess.run(['ping', '-c', '1', '-W', '1', IP_ADDRESS_TV], stdout=subprocess.PIPE)
             if response.returncode == 0:
                 print('TV is responding to ping.')
                 break
@@ -162,4 +162,7 @@ def set_tv_input():
             time.sleep(0.2)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('Exiting...')
