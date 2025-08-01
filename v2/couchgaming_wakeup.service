@@ -1,0 +1,11 @@
+[Unit]
+Description=Run couchgaming service after resume
+After=suspend.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash -c 'until ping -c1 1.1.1.1 &>/dev/null; do sleep 1; done'
+ExecStart=/usr/bin/systemctl start couchgaming_global.service
+
+[Install]
+WantedBy=suspend.target

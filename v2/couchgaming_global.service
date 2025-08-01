@@ -1,0 +1,14 @@
+[Unit]
+Description=Run my Python script at boot and on resume
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=sverrejb
+Environment=PATH=/home/sverrejb/.local/bin:/usr/bin:/bin
+Environment=HOME=/home/sverrejb
+ExecStart=/usr/bin/python3 /usr/local/bin/script_bazzite.py
+
+[Install]
+WantedBy=multi-user.target
