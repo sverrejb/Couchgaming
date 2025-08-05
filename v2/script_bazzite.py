@@ -52,21 +52,36 @@ def is_wake_from_suspend():
         with open('/proc/uptime', 'r') as f:
             uptime_seconds = float(f.read().split()[0])
         
+        print(f'System uptime: {uptime_seconds:.2f} seconds')
+        
         # If uptime is more than 5 minutes, assume it's a wake from suspend
         # Adjust this threshold based on your needs
-        return uptime_seconds > 300
+        is_wake = uptime_seconds > 300
+        
+        if is_wake:
+            print('Detected wake from suspend (uptime > 5 minutes)')
+        else:
+            print('Detected fresh boot (uptime < 5 minutes)')
+            
+        return is_wake
     except Exception as e:
         print(f'Error checking uptime: {e}')
         # Default to running Steam if we can't determine
+        print('Defaulting to wake from suspend behavior')
         return True
 
 
 def start_steam():
+    print('Checking if Steam should be started...')
     if not is_wake_from_suspend():
+        print('Not waking from suspend, skipping Steam startup.')
         return
+    
+    print('Wake from suspend detected, proceeding with Steam check...')
     
     try:
         # Check if Steam is already running (native process)
+        print('Checking if Steam is already running...')
         result = subprocess.run(
             ['pgrep', '-f', 'steam'], 
             stdout=subprocess.PIPE,
@@ -76,18 +91,20 @@ def start_steam():
         if result.returncode == 0:
             print('Steam is already running, skipping launch.')
         else:
-            print('Starting Steam...')
+            print('Steam not running, attempting to start...')
             log_path = '/tmp/steamstart.log'
             
             with open(log_path, 'a') as log_file:
-                subprocess.Popen(
+                process = subprocess.Popen(
                     ['steam'],
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
                     start_new_session=True
                 )
+                print(f'Steam started with PID: {process.pid}')
+                print(f'Steam logs will be written to: {log_path}')
     except Exception as e:
-        print(f'Error checking for Steam process: {e}')
+        print(f'Error checking
 
 def set_tv_input():
     try:
