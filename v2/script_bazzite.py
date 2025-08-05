@@ -24,6 +24,7 @@ def main():
 
 def execute_commands_on_wake():
     print('Running wake-up commands...')
+    start_steam()
     print('Waking TV....')
     send_wol_packet(MAC_ADDRESS_TV)
     wake_screen()
@@ -45,34 +46,48 @@ def wake_screen():
     x, y = random.randint(0, 10), random.randint(0, 10)
     subprocess.run(['ydotool', 'mousemove', str(x), str(y)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-
-def start_steamlink():
+def is_wake_from_suspend():
+    """Check if system is waking from suspend vs fresh boot"""
     try:
-        result = subprocess.run(
-            ['pgrep', '-f', 'com.valvesoftware.SteamLink'], 
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+        with open('/proc/uptime', 'r') as f:
+            uptime_seconds = float(f.read().split()[0])
+        
+        # If uptime is more than 5 minutes, assume it's a wake from suspend
+        # Adjust this threshold based on your needs
+        return uptime_seconds > 300
+    except Exception as e:
+        print(f'Error checking uptime: {e}')
+        # Default to running Steam if we can't determine
+        return True
 
-        if result.stdout:
-            print('SteamLink is already running, skipping launch.')
+
+def start_steam():
+    if not is_wake_from_suspend():
+        return
+    
+    try:
+        # Check if Steam is already running (native process)
+        result = subprocess.run(
+            ['pgrep', '-f', 'steam'], 
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if result.returncode == 0:
+            print('Steam is already running, skipping launch.')
         else:
-            print('Starting SteamLink...')
-            with open('/home/sverrejb/workspace/gamestart/steamlink.log', 'a') as log_file:
+            print('Starting Steam...')
+            log_path = '/tmp/steamstart.log'
+            
+            with open(log_path, 'a') as log_file:
                 subprocess.Popen(
-                    'QT_QPA_PLATFORM=wayland WAYLAND_DISPLAY=wayland-0 flatpak run com.valvesoftware.SteamLink',
-                    shell=True,
+                    ['steam'],
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
-                    start_new_session=True,
-                    env={
-                            'QT_QPA_PLATFORM': 'wayland',
-                            'WAYLAND_DISPLAY': 'wayland-0',
-                            'XDG_RUNTIME_DIR': '/run/user/1000'
-                        }
+                    start_new_session=True
                 )
     except Exception as e:
-        print(f'Error checking for SteamLink process: {e}')
+        print(f'Error checking for Steam process: {e}')
 
 def set_tv_input():
     try:
