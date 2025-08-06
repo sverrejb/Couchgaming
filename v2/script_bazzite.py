@@ -26,7 +26,6 @@ def execute_commands_on_wake():
     print('Running wake-up commands...')
     print('Waking TV....')
     send_wol_packet(MAC_ADDRESS_TV)
-    wake_screen()
     print('Setting TV input')
     set_tv_input()        
     print('Commands completed.') 
@@ -40,11 +39,6 @@ def send_wol_packet(mac_address):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.sendto(magic_packet, ('<broadcast>', 9))
 
-def wake_screen():
-    # If TV is ON, but media-PC has blanked the screen/screensaver, move the mouse a bit.
-    x, y = random.randint(0, 10), random.randint(0, 10)
-    subprocess.run(['ydotool', 'mousemove', str(x), str(y)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
 def set_tv_input():
     try:
         subprocess.run(['/home/sverrejb/.local/bin/alga', 'input', 'set', HDMI_INPUT], check=True)
