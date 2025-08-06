@@ -24,7 +24,6 @@ def main():
 
 def execute_commands_on_wake():
     print('Running wake-up commands...')
-    start_steam()
     print('Waking TV....')
     send_wol_packet(MAC_ADDRESS_TV)
     wake_screen()
@@ -45,67 +44,7 @@ def wake_screen():
     # If TV is ON, but media-PC has blanked the screen/screensaver, move the mouse a bit.
     x, y = random.randint(0, 10), random.randint(0, 10)
     subprocess.run(['ydotool', 'mousemove', str(x), str(y)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-def is_wake_from_suspend():
-    """Check if system is waking from suspend vs fresh boot"""
-    try:
-        with open('/proc/uptime', 'r') as f:
-            uptime_seconds = float(f.read().split()[0])
-        
-        print(f'System uptime: {uptime_seconds:.2f} seconds')
-        
-        # If uptime is more than 5 minutes, assume it's a wake from suspend
-        # Adjust this threshold based on your needs
-        is_wake = uptime_seconds > 300
-        
-        if is_wake:
-            print('Detected wake from suspend (uptime > 5 minutes)')
-        else:
-            print('Detected fresh boot (uptime < 5 minutes)')
-            
-        return is_wake
-    except Exception as e:
-        print(f'Error checking uptime: {e}')
-        # Default to running Steam if we can't determine
-        print('Defaulting to wake from suspend behavior')
-        return True
-
-
-def start_steam():
-    print('Checking if Steam should be started...')
-    if not is_wake_from_suspend():
-        print('Not waking from suspend, skipping Steam startup.')
-        return
     
-    print('Wake from suspend detected, proceeding with Steam check...')
-    
-    try:
-        # Check if Steam is already running (native process)
-        print('Checking if Steam is already running...')
-        result = subprocess.run(
-            ['pgrep', '-f', 'steam'], 
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        if result.returncode == 0:
-            print('Steam is already running, skipping launch.')
-        else:
-            print('Steam not running, attempting to start...')
-            log_path = '/tmp/steamstart.log'
-            
-            with open(log_path, 'a') as log_file:
-                process = subprocess.Popen(
-                    ['steam'],
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True
-                )
-                print(f'Steam started with PID: {process.pid}')
-                print(f'Steam logs will be written to: {log_path}')
-    except Exception as e:
-        print(f'Error checking
-
 def set_tv_input():
     try:
         subprocess.run(['/home/sverrejb/.local/bin/alga', 'input', 'set', HDMI_INPUT], check=True)
