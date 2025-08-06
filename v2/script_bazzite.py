@@ -2,7 +2,6 @@
 
 import time
 import subprocess
-import random
 import socket
 
 MAC_ADDRESS_TV = '48:8d:36:bc:e8:ec'
@@ -16,19 +15,15 @@ def main():
     # Add a small delay to ensure system is fully awake
     time.sleep(2)
     
-    # Execute the commands immediately
-    execute_commands_on_wake()
-    
-    print('Script completed successfully.')
-
-
-def execute_commands_on_wake():
     print('Running wake-up commands...')
     print('Waking TV....')
     send_wol_packet(MAC_ADDRESS_TV)
     print('Setting TV input')
     set_tv_input()        
     print('Commands completed.') 
+    
+    print('Script completed successfully.')
+    
 
 def send_wol_packet(mac_address):
     mac_bytes = bytes.fromhex(mac_address.replace(':', ''))
